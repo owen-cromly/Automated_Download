@@ -12,13 +12,14 @@ for area in areas:
     processingDate = str(dt.datetime.utcfromtimestamp(areas[area]["last_download"])).replace(" ", "T")#conversionList[0]+"T"+conversionList[1]
     # if 12 days have passed, request new data
     now = int(time.time())
-    if((now-areas[area]["last_download"])>1.036000000):
+    if((now-areas[area]["last_download"])>1036000):
         results = asf.search(intersectsWith=areas[area]['polygon'], processingDate=processingDate, **areas[area]["constraints"], maxResults=2)
         # download all urls
         #urls = [res.properties["url"] for res in results]
         for res in results:
             res.download(path=dm.get_destination(area), session=asf.ASFSession().auth_with_creds(username=argv[1], password=argv[2]))
         dm.success(area, now)
+
 
 
 
