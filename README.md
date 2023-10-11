@@ -5,3 +5,7 @@ This is the code for automating data download from ASF
 AutoDownloader.py should be run on a regular schedule with a valid username and password as command-line arguments
 
 DownloadManager.py can be imported and used to maintain areas of interest
+
+# Bugs/Issues
+
+modify_area() does not currently allow constraints to be removed
