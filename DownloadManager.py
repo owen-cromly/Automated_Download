@@ -2,16 +2,20 @@ import json
 import os.path
 import sys
 import time
+import datetime
 
 
     
-# class variable path
+# global variable path
 dm_path = os.path.join(os.path.dirname(__file__), "dm_meta.json")
+# global variable dm_date_format
+dm_date_format = '%d%m%Y'
 
 def set_up(path_for_downloads: str = os.path.dirname(sys.argv[0]), folder_name: str = None, noFolder = False):
     ## determine if the thing is already set up
-    if(os.path.exists(os.path.join(os.path.dirname(sys.argv[0]), "meta.json"))):
-        raise Exception("Error: Download manager already set up. Call help() for help.")
+    if(os.path.exists(dm_path)):
+        print("Download manager already set up; set_up() doing nothing. Call help() for help.")
+        return
     ## create the path to the downloads directory
     if(folder_name):
         downloads_path = os.path.join(path_for_downloads, folder_name)
@@ -32,7 +36,7 @@ def set_up(path_for_downloads: str = os.path.dirname(sys.argv[0]), folder_name: 
         "area_example": {
             "Los Angeles": {
                 "name": "Los Angeles",
-                "polygon": "POLYGON(30 30, 40 40)",
+                "polygon": "POLYGON((30 30, 30 40, 40 40, 40 30, 30 30))",
                 "begin": 626244364,
                 "last_download": 626244364,
                 "constraints": {
@@ -53,11 +57,14 @@ def help():
 def new_area(
         name: str = None,
         polygon: str = None, 
-        begin: int = None, 
+        dem: str = None,
+        begin: str = None, 
         **kwargs
         ):
-    if not (polygon and begin and name):
+    if not (((polygon!=None) ^ (dem!=None)) and begin and name):
         raise Exception("newArea(): you must provide a WKT POLYGON kwarg 'polygon=', a timestamp kwarg 'begin=', and a string kwarg 'name='")
+    if dem:
+        polygon = demToPolygon(dem)
     with open(dm_path, 'r') as meta:
         meta_dict = json.load(meta)
         if name in meta_dict["areas"]:
@@ -65,10 +72,14 @@ def new_area(
         meta_dict["areas"][name] = {
             "name": name,
             "polygon": polygon,
-            "begin": begin,
-            "last_download": begin,
+            "begin": dateToTimestamp(begin),
+            "last_download": dateToTimestamp(begin),
             "constraints": kwargs
         }
+        if meta_dict["areas"][name].get("constraints", meta_dict).get("start", None):
+            meta_dict["areas"][name]["constraints"]["start"] = dateToTimestamp(meta_dict["areas"][name]["constraints"]["start"])
+        if meta_dict["areas"][name].get("constraints", meta_dict).get("end", None):
+            meta_dict["areas"][name]["constraints"]["end"] = dateToTimestamp(meta_dict["areas"][name]["constraints"]["end"])
     with open(dm_path, 'w') as meta:
         json.dump(meta_dict, meta, indent=4)
     os.makedirs(os.path.join(meta_dict["downloads_directory"], name), exist_ok = True)
@@ -84,16 +95,18 @@ def modify_area(
         areaname: str,
         name: str = None,
         polygon: str = None, 
+        dem: list = None,
         begin: int = None, 
         **kwargs
         ):
-    if not (name or polygon or begin or kwargs):
+    if not ((name or polygon or dem or begin or kwargs) and not(polygon and dem)):
         print("Warning: you called modify_area() but did not provide any update information, nothing was done")
         return
         #raise Exception("newArea(): you must provide a WKT POLYGON kwarg 'polygon=', a timestamp kwarg 'begin=', and a string kwarg 'name='")
     with open(dm_path, 'r') as meta:
         meta_dict = json.load(meta)
     if name:
+        # rename the destination subfolder, the name in areas, and the name in areas[area]
         os.rename(os.path.join(meta_dict["downloads_directory"], meta_dict["areas"][areaname]["name"]), os.path.join(meta_dict["downloads_directory"], name))
         meta_dict["areas"][areaname]["name"] = name
         meta_dict["areas"][name] = meta_dict["areas"].pop(areaname)
@@ -102,8 +115,17 @@ def modify_area(
     if begin:
         meta_dict["areas"][name]["begin"] = begin
     if kwargs:
+        # place all kwargs in constraints, delete those specified as None
         for k, v in kwargs.items():
-            meta_dict["areas"][name]["constraints"][k] = v
+            if v:
+                meta_dict["areas"][name]["constraints"][k] = v
+            else:
+                del meta_dict["areas"][name]["constraints"][k]
+        # convert start and end times from dm_date_format to the proper int timestamp format
+        if kwargs.get("start", None):
+            meta_dict["areas"][name]["constraints"]["start"] = dateToTimestamp(kwargs["start"])
+        if kwargs.get("end", None):
+            meta_dict["areas"][name]["constraints"]["end"] = dateToTimestamp(kwargs["end"])
     with open(dm_path, 'w') as meta:
         json.dump(meta_dict, meta, indent=4)
 
@@ -177,5 +199,11 @@ def success(name: str, timestamp: int):
 if not (os.path.exists(dm_path)):
     set_up()
 
-
+def dateToTimestamp(date: str):
+    return int(datetime.datetime.strptime(date, dm_date_format).timestamp())
     
+def timestampToDate(timestamp: int):
+    return datetime.datetime.utcfromtimestamp(timestamp).strftime(dm_date_format)
+
+def demToPolygon(list: list):
+    return "POLYGON(("+str(list[0])+" "+str(list[2])+", "+str(list[0])+" "+str(list[3])+", "+str(list[1])+" "+str(list[3])+", "+str(list[1])+" "+str(list[2])+", "+str(list[0])+" "+str(list[2])+"))"

@@ -13,7 +13,7 @@ for area in areas:
     # if 12 days have passed, request new data
     now = int(time.time())
     if((now-areas[area]["last_download"])>1036000):
-        results = asf.search(intersectsWith=areas[area]['polygon'], processingDate=processingDate, **areas[area]["constraints"], maxResults=2)
+        results = asf.search(intersectsWith=areas[area]['polygon'], processingDate=processingDate, **areas[area]["constraints"])
         # download all urls
         #urls = [res.properties["url"] for res in results]
         for res in results:
