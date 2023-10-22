@@ -13,7 +13,22 @@ for area in areas:
     # if 12 days have passed, request new data
     now = int(time.time())
     if((now-areas[area]["last_download"])>1036000):
-        results = asf.search(intersectsWith=areas[area]['polygon'], processingDate=processingDate, **areas[area]["constraints"])
+        # allows a list of path frame combinations
+        if 'flightDirection' in areas[area]["constraints"] and type(areas[area]["constraints"]['flightDirection'])==list:
+            pathList = areas[area]["constraints"]['flightDirection']
+            del areas[area]["constraints"]['flightDirection']
+            if 'frame' in areas[area]["constraints"]:
+                # note: control for frameList and pathList having the same length and frameList being a list is elsewhere
+                frameList = areas[area]["constraints"]['frame']
+                del areas[area]["constraints"]['frame']
+                for i in range(0, len(pathList)):
+                    results = asf.search(intersectsWith=areas[area]['polygon'], processingDate=processingDate, flightDirection=pathList[i], frame=frameList[i], **areas[area]["constraints"])
+            else:
+                for i in range(0, len(pathList)):
+                    results = asf.search(intersectsWith=areas[area]['polygon'], processingDate=processingDate, flightDirection=pathList[i], **areas[area]["constraints"])
+        # there are 0 to 1 paths given (no list of path frame combinations)
+        else:
+            results = asf.search(intersectsWith=areas[area]['polygon'], processingDate=processingDate, **areas[area]["constraints"])
         # download all urls
         #urls = [res.properties["url"] for res in results]
         for res in results:

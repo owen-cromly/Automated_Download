@@ -76,10 +76,15 @@ def new_area(
             "last_download": dateToTimestamp(begin),
             "constraints": kwargs
         }
+        # if start and end parameters are provided, convert them from date to timestamp
         if meta_dict["areas"][name].get("constraints", meta_dict).get("start", None):
             meta_dict["areas"][name]["constraints"]["start"] = dateToTimestamp(meta_dict["areas"][name]["constraints"]["start"])
         if meta_dict["areas"][name].get("constraints", meta_dict).get("end", None):
             meta_dict["areas"][name]["constraints"]["end"] = dateToTimestamp(meta_dict["areas"][name]["constraints"]["end"])
+        # if flightDirection and frame are both provided and flightDirection is a list, ensure that frame is a list of the same length
+        if meta_dict["areas"][name].get("constraints", meta_dict).get("flightDirection", None) and type(meta_dict["areas"][name]["constraints"]["flightDirection"])==list:
+            if not (meta_dict["areas"][name].get("constraints", meta_dict).get("frame", None) and type(meta_dict["areas"][name]["constraints"]["frame"])==list and len(meta_dict["areas"][name]["constraints"]["frame"])==len(meta_dict["areas"][name]["constraints"]["flightDirection"])):
+                raise Exception("area ["+name+"] not added. You cannot add a list of flightDirection if you do not have an equally-sized list of frame (the list feature is to provide the ability to store several path-frame combinations)")
     with open(dm_path, 'w') as meta:
         json.dump(meta_dict, meta, indent=4)
     os.makedirs(os.path.join(meta_dict["downloads_directory"], name), exist_ok = True)
@@ -94,9 +99,9 @@ def get_area(area: str):
 def modify_area(
         areaname: str,
         name: str = None,
-        polygon: str = None, 
+        polygon: str = None,
         dem: list = None,
-        begin: int = None, 
+        begin: int = None,
         **kwargs
         ):
     if not ((name or polygon or dem or begin or kwargs) and not(polygon and dem)):
