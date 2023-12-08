@@ -7,11 +7,11 @@ import datetime
 
     
 # global variable path
-dm_path = os.path.join(os.path.dirname(__file__), "dm_meta.json")
+dm_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dm_meta.json")
 # global variable dm_date_format
 dm_date_format = '%d%m%Y'
 
-def set_up(path_for_downloads: str = os.path.dirname(sys.argv[0]), folder_name: str = None, noFolder = False):
+def set_up(path_for_downloads: str = os.path.dirname(os.path.abspath(sys.argv[0])), folder_name: str = None, noFolder = False):
     ## determine if the thing is already set up
     if(os.path.exists(dm_path)):
         print("Download manager already set up; set_up() doing nothing. Call help() for help.")
@@ -20,12 +20,12 @@ def set_up(path_for_downloads: str = os.path.dirname(sys.argv[0]), folder_name: 
     if(folder_name):
         downloads_path = os.path.join(path_for_downloads, folder_name)
     else:
-        if (path_for_downloads != os.path.dirname(sys.argv[0]) or noFolder):
+        if (path_for_downloads != os.path.dirname(os.path.abspath(sys.argv[0])) or noFolder):
             downloads_path = path_for_downloads
         else:
             downloads_path = os.path.join(path_for_downloads, "autodownloads")
     ## create uniform slashes
-    downloads_path = downloads_path.replace('/', '\\')
+    #################################################     H E R E  I T  I S        downloads_path = downloads_path.replace('/', '\\')
     ## create directories for (static declared) meta_path and downloads_path
     os.makedirs(downloads_path, exist_ok=True)
     os.makedirs(os.path.dirname(dm_path), exist_ok=True)
@@ -144,7 +144,7 @@ def remove_area(name):
         if not os.listdir(os.path.join(meta_dict["downloads_directory"], name)):
             os.rmdir(os.path.join(meta_dict["downloads_directory"], name))
 
-def get_destination(area: str):
+def get_destination(area: str = None):
     with open(dm_path, 'r') as meta:
         meta_dict = json.load(meta)
         if not area:
@@ -161,23 +161,23 @@ def modify_destination(parent_directory: str = None, folder_name: str = None):
     with open(dm_path, 'r') as meta:
         meta_dict = json.load(meta)
     ## decide the name of the new directory
-    os.path.join(os.path.dirname(sys.argv[0]), )
+    os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), )
     if parent_directory is not None:
         if folder_name:
             if(os.path.isabs(parent_directory)):
                 newdir = os.path.join(parent_directory, folder_name)
             else:
-                newdir = os.path.join(os.path.dirname(sys.argv[0]), parent_directory, folder_name)
+                newdir = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), parent_directory, folder_name)
         else:
             if(os.path.isabs(parent_directory)):
                 newdir = os.path.join(parent_directory, os.path.basename(meta_dict["downloads_directory"]))
             else:
-                newdir = os.path.join(os.path.dirname(sys.argv[0]), parent_directory, os.path.basename(meta_dict["downloads_directory"]))
+                newdir = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), parent_directory, os.path.basename(meta_dict["downloads_directory"]))
     elif folder_name:
         newdir = os.path.join(os.path.dirname(meta_dict["downloads_directory"]), folder_name)
     else:
         return
-    newdir = newdir.replace('/', '\\')
+    #####################  H E R E  I T  I S  ######################newdir = newdir.replace('/', '\\')
     ## make sure the parent directory exists, create it if needed
     os.makedirs(os.path.dirname(newdir), exist_ok=True)
     ## move the actual directory (this will result in an error and stop the function before any harm is done if the new directory is poorly formed)
